@@ -21,8 +21,12 @@ sudo id
 [ $? -ne 0 ] && exit 1
 
 # GETOPT:
-while getopts "n:e:k:i:s" opt; do
+while getopts "a:n:e:k:i:s" opt; do
 	case $opt in
+		a)
+			# ARCH
+			ARCHBITS=$OPTARG
+			;;
 		n)
 			# Network interface
 			IFACE=$OPTARG
@@ -50,6 +54,9 @@ while getopts "n:e:k:i:s" opt; do
 			;;
 	esac
 done
+
+[ "$ARCHBITS" == "32" ] && IMAGE=$LIBVIRT/images/f18.i686.qcow2.img
+[ "$ARCHBITS" == "64" ] && IMAGE=$LIBVIRT/images/f18.x86_64.qcow2.img
 
 # Defaults for qemu-kvm
 CLI_DEFAULTS="-device piix3-usb-uhci,id=usb,bus=pci.0,addr=0x1.0x2 -device virtio-serial-pci,id=virtio-serial0,bus=pci.0,addr=0x4 -device virtio-balloon-pci,id=balloon0,bus=pci.0,addr=0x6"
