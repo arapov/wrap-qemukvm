@@ -3,17 +3,18 @@
 # LIBVIRT have kernels/ and images/ dirs.
 
 # CONFIG:
-HOME="/home/anton"
-LIBVIRT="/home/anton/share/libvirt"
+HOME="/home/devel"
+LIBVIRT=$HOME"/libvirt"
 
 # DEFAULTS:
 IFACE="em1"
 EXPORT=$HOME
-KERNEL=$HOME/src/upstream/linux/arch/x86/boot/bzImage
+KERNEL=$HOME/upstream/linux/arch/x86/boot/bzImage
 INITRD=""
-IMAGE=$LIBVIRT/images/rawhide.qcow2.img
-#ROOT="UUID=f23778d1-d14d-48e0-aeda-52b2158538bc"
-ROOT="/dev/vda2"
+IMAGE=$LIBVIRT/images/f18.x86_64.qcow2.img
+#IMAGE=$LIBVIRT/images/f18.i686.qcow2.img
+#ROOT="UUID=d868faf7-ae27-416a-86ea-7ac01d08d481"
+ROOT="/dev/vda3"
 
 # Script must be run under superuser
 sudo id
@@ -50,17 +51,16 @@ while getopts "n:e:k:i:s" opt; do
 	esac
 done
 
-
 # Defaults for qemu-kvm
-CLI_DEFAULTS="-device piix3-usb-uhci,id=usb,bus=pci.0,addr=0x1.0x2 -device virtio-serial-pci,id=virtio-serial0,bus=pci.0,addr=0x5 -device virtio-balloon-pci,id=balloon0,bus=pci.0,addr=0x6"
+CLI_DEFAULTS="-device piix3-usb-uhci,id=usb,bus=pci.0,addr=0x1.0x2 -device virtio-serial-pci,id=virtio-serial0,bus=pci.0,addr=0x4 -device virtio-balloon-pci,id=balloon0,bus=pci.0,addr=0x6"
 # CPU
 CLI_CPU="-smp 2,sockets=2,cores=1,threads=1 -cpu host,+lahf_lm,+rdtscp,+avx,+osxsave,+xsave,+aes,+popcnt,+x2apic,+sse4.2,+sse4.1,+pdcm,+xtpr,+cx16,+tm2,+est,+smx,+vmx,+ds_cpl,+dtes64,+pclmuldq,+pbe,+tm,+ht,+ss,+acpi,+ds"
 # IMAGE
-CLI_HDD="-device virtio-blk-pci,scsi=off,bus=pci.0,addr=0x4,drive=drive-virtio-disk0,id=virtio-disk0,bootindex=1 -drive file=$IMAGE,if=none,id=drive-virtio-disk0,format=qcow2"
+CLI_HDD="-device virtio-blk-pci,scsi=off,bus=pci.0,addr=0x5,drive=drive-virtio-disk0,id=virtio-disk0,bootindex=1 -drive file=$IMAGE,if=none,id=drive-virtio-disk0,format=qcow2"
 
 # Do we want custom kernel?
 if [ "$KERNEL" != "" ]; then
-	CLI_BOOT="-append 'root=$ROOT ro rd.md=0 rd.lvm=0 rd.dm=0 SYSFONT=True KEYTABLE=us rd.luks=0 LANG=en_US.UTF-8 console=ttyS0 3'"
+	CLI_BOOT="-append 'root=$ROOT ro rootflags=subvol=root rd.md=0 rd.lvm=0 rd.dm=0 rd.luks=0 console=ttyS0 3'"
 
 	CLI_KERNEL="-kernel $KERNEL"
 	echo "[INFO] Linux kernel to load: $KERNEL"
@@ -79,12 +79,12 @@ if [ "$IFACE" != "" ]; then
 	if [ $? -ne 0 ]; then
 		echo -n "[INFO] Setting up bridge interface... "
 		sudo ip link add link $IFACE dev macvtap0 type macvtap >/dev/null 2>&1
-		sudo ip link set macvtap0 address 1a:46:0b:ca:bc:7b up >/dev/null 2>&1
+		sudo ip link set macvtap0 address 52:54:00:5a:1e:e1 up >/dev/null 2>&1
 		[ $? -eq 0 ] && echo "OK" || echo "ERROR"
 	fi
 	NN=`ip link show macvtap0 | head -n 1 | cut -d ":" -f 1`
 	TAP=/dev/tap$DESC
-	CLI_NETWORK="-netdev tap,id=hostnet0,vhost=on,fd=21 -device virtio-net-pci,netdev=hostnet0,id=net0,mac=1a:46:0b:ca:bc:7b,bus=pci.0,addr=0x3 21<>/dev/tap$NN"
+	CLI_NETWORK="-netdev tap,id=hostnet0,vhost=on,fd=21 -device virtio-net-pci,netdev=hostnet0,id=net0,mac=52:54:00:5a:1e:e1,bus=pci.0,addr=0x3 21<>/dev/tap$NN"
 fi
 
 # Do we want export?
@@ -94,13 +94,14 @@ echo "       $ mount -t 9p -o trans=virtio host /mnt/hostfs/ -oversion=9p2000.L"
 echo "[INFO] Image to boot: $IMAGE"
 echo "       UUID of the / (root) partition: $ROOT_UUID"
 
-CLI_SERIAL="-monitor telnet:127.0.0.1:4444,server,nowait -serial file:/tmp/serial"
+CLI_SERIAL=""
+#CLI_SERIAL="-monitor telnet:127.0.0.1:4444,server,nowait -serial file:/tmp/serial"
 #CLI_SERIAL="-serial tcp:127.0.0.1:9999" # nc -l 9999 | tee /tmp/serial
 
 ##############
 
 echo "[INFO] KVM start"
-sudo su -c "qemu-kvm -M pc-0.15 -enable-kvm -rtc base=utc -m 2048 \
+sudo su -c "qemu-kvm -name f18.x86_64 -M pc-1.2 -nographic -enable-kvm -rtc base=utc -m 2048 \
 			$CLI_KERNEL \
 			$CLI_INITRD \
 			$CLI_CPU \
