@@ -3,16 +3,23 @@
 # LIBVIRT have kernels/ and images/ dirs.
 
 # CONFIG:
-HOME="/home/devel"
-LIBVIRT=$HOME"/libvirt"
+HOME=/home/devel
+LIBVIRT=$HOME/libvirt
+IMAGES=$LIBVIRT/images
+LINUX=$HOME/upstream/linux
 
 # DEFAULTS:
 IFACE="em1"
 EXPORT=$HOME
-KERNEL=$HOME/upstream/linux/arch/x86/boot/bzImage
+KERNEL=$LINUX/arch/x86/boot/bzImage
 INITRD=""
+
+# IMAGE=(distro).(vmarch).(format)
+VMARCH="x86_64"
+DISTRO="f18"
+FMT="qcow2.img"
 IMAGE=$LIBVIRT/images/f18.x86_64.qcow2.img
-#IMAGE=$LIBVIRT/images/f18.i686.qcow2.img
+
 #ROOT="UUID=d868faf7-ae27-416a-86ea-7ac01d08d481"
 ROOT="/dev/vda3"
 
@@ -55,8 +62,9 @@ while getopts "a:n:e:k:i:s" opt; do
 	esac
 done
 
-[ "$ARCHBITS" == "32" ] && IMAGE=$LIBVIRT/images/f18.i686.qcow2.img
-[ "$ARCHBITS" == "64" ] && IMAGE=$LIBVIRT/images/f18.x86_64.qcow2.img
+[ "$ARCHBITS" == "32" ] && VMARCH="i686"
+[ "$ARCHBITS" == "64" ] && VMARCH="x86_64"
+IMAGE=$IMAGES/$DISTRO.$VMARCH.$FMT
 
 # Defaults for qemu-kvm
 CLI_DEFAULTS="-device piix3-usb-uhci,id=usb,bus=pci.0,addr=0x1.0x2 -device virtio-serial-pci,id=virtio-serial0,bus=pci.0,addr=0x4 -device virtio-balloon-pci,id=balloon0,bus=pci.0,addr=0x6"
@@ -66,9 +74,10 @@ CLI_CPU="-smp 2,sockets=2,cores=1,threads=1 -cpu host,+lahf_lm,+rdtscp,+avx,+osx
 CLI_HDD="-device virtio-blk-pci,scsi=off,bus=pci.0,addr=0x5,drive=drive-virtio-disk0,id=virtio-disk0,bootindex=1 -drive file=$IMAGE,if=none,id=drive-virtio-disk0,format=qcow2"
 
 # Do we want custom kernel?
+CLI_BASE=""
 if [ "$KERNEL" != "" ]; then
 	CLI_BOOT="-append 'root=$ROOT ro rootflags=subvol=root rd.md=0 rd.lvm=0 rd.dm=0 rd.luks=0 console=ttyS0 3'"
-
+	CLI_BASE="-nographic"
 	CLI_KERNEL="-kernel $KERNEL"
 	echo "[INFO] Linux kernel to load: $KERNEL"
 
@@ -108,7 +117,8 @@ CLI_SERIAL=""
 ##############
 
 echo "[INFO] KVM start"
-sudo su -c "qemu-kvm -name f18.x86_64 -M pc-1.2 -nographic -enable-kvm -rtc base=utc -m 2048 \
+sudo su -c "qemu-kvm -name f18.x86_64 -M pc-1.2 -enable-kvm -rtc base=utc -m 2048 \
+			$CLI_BASE \
 			$CLI_KERNEL \
 			$CLI_INITRD \
 			$CLI_CPU \
