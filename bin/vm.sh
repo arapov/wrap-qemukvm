@@ -6,7 +6,7 @@
 HOME=/home/devel
 LIBVIRT=$HOME/libvirt
 IMAGES=$LIBVIRT/images
-LINUX=$HOME/upstream/linux
+LINUX=$HOME/up/linux
 
 # DEFAULTS:
 IFACE="em1"
@@ -16,9 +16,9 @@ INITRD=""
 
 # IMAGE=(distro).(vmarch).(format)
 VMARCH="x86_64"
-DISTRO="f18"
+DISTRO="fedora19"
 FMT="qcow2.img"
-IMAGE=$LIBVIRT/images/f18.x86_64.qcow2.img
+IMAGE=$LIBVIRT/images/fedora19.x86_64.qcow2.img
 
 #ROOT="UUID=d868faf7-ae27-416a-86ea-7ac01d08d481"
 ROOT="/dev/vda3"
@@ -69,7 +69,7 @@ IMAGE=$IMAGES/$DISTRO.$VMARCH.$FMT
 # Defaults for qemu-kvm
 CLI_DEFAULTS="-device piix3-usb-uhci,id=usb,bus=pci.0,addr=0x1.0x2 -device virtio-serial-pci,id=virtio-serial0,bus=pci.0,addr=0x4 -device virtio-balloon-pci,id=balloon0,bus=pci.0,addr=0x6"
 # CPU
-CLI_CPU="-smp 2,sockets=2,cores=1,threads=1 -cpu host,+lahf_lm,+rdtscp,+avx,+osxsave,+xsave,+aes,+popcnt,+x2apic,+sse4.2,+sse4.1,+pdcm,+xtpr,+cx16,+tm2,+est,+smx,+vmx,+ds_cpl,+dtes64,+pclmuldq,+pbe,+tm,+ht,+ss,+acpi,+ds"
+CLI_CPU="-smp 2,sockets=2,cores=1,threads=1 -cpu host,+lahf_lm,+rdtscp,+avx,+osxsave,+xsave,+aes,+popcnt,+x2apic,+sse4.2,+sse4.1,+pdcm,+xtpr,+cx16,+tm2,+est,+smx,+vmx,+ds_cpl,+dtes64,+pclmuldq,+pbe,+tm,+ht,+ss,+acpi,+ds,level=9"
 # IMAGE
 CLI_HDD="-device virtio-blk-pci,scsi=off,bus=pci.0,addr=0x5,drive=drive-virtio-disk0,id=virtio-disk0,bootindex=1 -drive file=$IMAGE,if=none,id=drive-virtio-disk0,format=qcow2"
 
